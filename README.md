@@ -11,11 +11,27 @@ Jogo da memória em Python orientado a objetos com Pygame.
 ## Instalação das dependências
 
 ```bash
-python -m pip install pygame Pillow
+python -m pip install -r requirements.txt
 ```
 
 ## Como executar
 
+### Opção 1: Servidor Web (Recomendado)
+Execute a landing page interativa no navegador:
+
+**Windows:**
+```bash
+run.bat
+```
+
+**macOS/Linux:**
+```bash
+bash run.sh
+```
+
+Depois, abra http://localhost:5000 no seu navegador e clique em **"Baixar jogo"**.
+
+### Opção 2: Direto via Terminal
 ```bash
 python main.py
 ```

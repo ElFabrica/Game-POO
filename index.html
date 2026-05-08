@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CodeMemory — Jogo da Memória de Programação</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Exo+2:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:      #0c0c0f;
+    --surface: #131318;
+    --raised:  #1a1a22;
+    --border:  #252530;
+    --border2: #32323f;
+    --ink:     #e8e8f0;
+    --muted:   #7a7a90;
+    --faint:   #3a3a48;
+    --accent:  #5b8dee;
+    --accent2: #a259ff;
+    --green:   #3dd68c;
+  }
+
+  html { font-size: 16px; scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Exo 2', sans-serif;
+    font-weight: 300;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { opacity: 0.8; }
+
+  /* ── NAV ── */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 60px;
+    background: rgba(12,12,15,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-logo {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 1.2rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+
+  .nav-logo span { color: var(--accent); }
+
+  .nav-links {
+    display: flex;
+    gap: 36px;
+    list-style: none;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .nav-links a { color: var(--muted); transition: color 0.2s; }
+  .nav-links a:hover { color: var(--ink); opacity: 1; }
+
+  /* ── HERO ── */
+  .hero {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 110px 60px 90px;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -120px; right: -80px;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(91,141,238,0.07) 0%, transparent 65%);
+    pointer-events: none;
+  }
+
+  .hero-tag {
+    display: inline-block;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 1px solid rgba(91,141,238,0.3);
+    padding: 5px 14px;
+    margin-bottom: 36px;
+  }
+
+  .hero h1 {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: clamp(3rem, 7vw, 5.2rem);
+    font-weight: 700;
+    line-height: 1.0;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--ink);
+    margin-bottom: 10px;
+  }
+
+  .hero h1 .dim {
+    color: var(--muted);
+    font-weight: 300;
+    display: block;
+    font-size: 0.65em;
+    letter-spacing: 0.06em;
+    margin-bottom: 6px;
+    font-family: 'Exo 2', sans-serif;
+    text-transform: none;
+  }
+
+  .hero h1 .highlight { color: var(--accent); }
+
+  .hero-desc {
+    margin-top: 28px;
+    font-size: 1rem;
+    color: var(--muted);
+    max-width: 500px;
+    line-height: 1.85;
+    margin-bottom: 52px;
+  }
+
+  .hero-actions {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .btn-primary {
+    display: inline-block;
+    background: var(--accent);
+    color: #fff;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    font-size: 0.82rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 14px 36px;
+    transition: opacity 0.2s, transform 0.2s;
+    clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+  }
+  .btn-primary:hover { opacity: 0.85; transform: translateY(-2px); }
+
+  .btn-ghost {
+    display: inline-block;
+    background: transparent;
+    color: var(--muted);
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 500;
+    font-size: 0.82rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 13px 32px;
+    border: 1px solid var(--border2);
+    transition: border-color 0.2s, color 0.2s;
+    clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+  }
+  .btn-ghost:hover { border-color: var(--muted); color: var(--ink); opacity: 1; }
+
+  /* ── VALUE PROP ── */
+  .value-prop {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 80px 60px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .vp-label {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 40px;
+  }
+
+  .vp-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+  }
+
+  .vp-item {
+    background: var(--surface);
+    padding: 36px 32px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .vp-item::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 2px;
+    background: var(--accent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .vp-item:nth-child(2)::before { background: var(--accent2); }
+  .vp-item:nth-child(3)::before { background: var(--green); }
+
+  .vp-item:hover::before { opacity: 1; }
+
+  .vp-num {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 2.8rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--accent);
+    margin-bottom: 12px;
+    display: block;
+  }
+
+  .vp-item:nth-child(2) .vp-num { color: var(--accent2); }
+  .vp-item:nth-child(3) .vp-num { color: var(--green); }
+
+  .vp-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink);
+    margin-bottom: 10px;
+  }
+
+  .vp-text {
+    font-size: 0.85rem;
+    color: var(--muted);
+    line-height: 1.8;
+  }
+
+  /* ── CARDS PREVIEW ── */
+  .cards-preview {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 80px 60px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-label {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 36px;
+  }
+
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 10px;
+  }
+
+  .mem-card {
+    aspect-ratio: 3/4;
+    background: var(--raised);
+    border: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: border-color 0.25s, transform 0.25s;
+    cursor: default;
+  }
+
+  .mem-card:hover { border-color: var(--accent); transform: translateY(-5px); }
+
+  .mem-card .icon { font-size: 1.4rem; line-height: 1; }
+
+  .mem-card .name {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.58rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .mem-card.flipped {
+    background: var(--surface);
+    border-color: var(--border);
+  }
+
+  .mem-card.flipped .icon,
+  .mem-card.flipped .name { display: none; }
+
+  /* ── ABOUT ── */
+  .about {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 80px 60px;
+    border-bottom: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+    align-items: start;
+  }
+
+  .about h2 {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 2.2rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    line-height: 1.15;
+    color: var(--ink);
+    margin-bottom: 20px;
+  }
+
+  .about p {
+    font-size: 0.9rem;
+    color: var(--muted);
+    line-height: 1.9;
+    margin-bottom: 16px;
+  }
+
+  .features { padding-top: 4px; }
+
+  .feature-item {
+    padding: 18px 0;
+    border-top: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: 24px 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+
+  .feature-num {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: var(--faint);
+    letter-spacing: 0.05em;
+    padding-top: 3px;
+  }
+
+  .feature-text h4 {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink);
+    margin-bottom: 4px;
+  }
+
+  .feature-text p {
+    font-size: 0.82rem;
+    color: var(--muted);
+    line-height: 1.75;
+    margin: 0;
+  }
+
+  /* ── REQUIREMENTS ── */
+  .requirements {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 80px 60px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .req-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border);
+  }
+
+  .req-item {
+    background: var(--surface);
+    padding: 24px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .req-key {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+
+  .req-val {
+    font-size: 0.88rem;
+    color: var(--ink);
+  }
+
+  code {
+    font-family: 'Courier New', monospace;
+    font-size: 0.85em;
+    background: var(--raised);
+    border: 1px solid var(--border2);
+    padding: 1px 6px;
+    color: var(--accent);
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 36px 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  footer p {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+
+  .footer-nav {
+    display: flex;
+    gap: 28px;
+    list-style: none;
+  }
+
+  .footer-nav a {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--faint);
+    transition: color 0.2s;
+  }
+  .footer-nav a:hover { color: var(--ink); opacity: 1; }
+
+  @media (max-width: 720px) {
+    nav { padding: 18px 24px; }
+    .hero, .value-prop, .cards-preview, .about, .requirements, footer { padding-left: 24px; padding-right: 24px; }
+    .vp-grid { grid-template-columns: 1fr; }
+    .cards-grid { grid-template-columns: repeat(3, 1fr); }
+    .about { grid-template-columns: 1fr; gap: 48px; }
+    .req-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="nav-logo">Code<span>Memory</span></span>
+  <ul class="nav-links">
+    <li><a href="#valor">Proposta</a></li>
+    <li><a href="#sobre">Sobre</a></li>
+    <li><a href="https://github.com">GitHub</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-tag">Projeto Acadêmico · Python · 2026</div>
+  <h1>
+    <span class="dim">Aprenda programação</span>
+    Jogando a<br><span class="highlight">memória.</span>
+  </h1>
+  <p class="hero-desc">
+    Um jogo da memória onde os pares são conceitos reais de programação —
+    sintaxe, paradigmas e estruturas de dados. Aprendizado ativo sem perceber.
+  </p>
+  <div class="hero-actions">
+    <a href="#download" class="btn-primary" id="download">Baixar jogo</a>
+    <a href="https://github.com" class="btn-ghost">Ver no GitHub</a>
+  </div>
+</div>
+
+<!-- PROPOSTA DE VALOR -->
+<div class="value-prop" id="valor">
+  <p class="vp-label">// Por que CodeMemory?</p>
+  <div class="vp-grid">
+    <div class="vp-item">
+      <span class="vp-num">3×</span>
+      <p class="vp-title">Mais retenção</p>
+      <p class="vp-text">Memória ativa por associação é comprovadamente mais eficaz do que leitura passiva de documentação.</p>
+    </div>
+    <div class="vp-item">
+      <span class="vp-num">60+</span>
+      <p class="vp-title">Conceitos reais</p>
+      <p class="vp-text">Pares cobrindo variáveis, funções, paradigmas, algoritmos e padrões de projeto — conteúdo de faculdade.</p>
+    </div>
+    <div class="vp-item">
+      <span class="vp-num">0</span>
+      <p class="vp-title">Barreiras de entrada</p>
+      <p class="vp-text">Uma dependência, sem cadastro, sem instalador. Roda com <code>python main.py</code> em qualquer SO.</p>
+    </div>
+  </div>
+</div>
+
+<!-- CARDS PREVIEW -->
+<div class="cards-preview">
+  <p class="section-label">// Preview das cartas</p>
+  <div class="cards-grid">
+    <div class="mem-card flipped"></div>
+    <div class="mem-card"><span class="icon">🐍</span><span class="name">Python</span></div>
+    <div class="mem-card flipped"></div>
+    <div class="mem-card"><span class="icon">λ</span><span class="name">Lambda</span></div>
+    <div class="mem-card flipped"></div>
+    <div class="mem-card"><span class="icon">{ }</span><span class="name">Dict</span></div>
+    <div class="mem-card"><span class="icon">🔁</span><span class="name">Loop</span></div>
+    <div class="mem-card flipped"></div>
+    <div class="mem-card"><span class="icon">⚡</span><span class="name">Async</span></div>
+    <div class="mem-card flipped"></div>
+    <div class="mem-card"><span class="icon">🧱</span><span class="name">Classe</span></div>
+    <div class="mem-card flipped"></div>
+    <div class="mem-card"><span class="icon">∑</span><span class="name">Recursão</span></div>
+  </div>
+</div>
+
+<!-- ABOUT + FEATURES -->
+<div class="about" id="sobre">
+  <div>
+    <p class="section-label">// Sobre o projeto</p>
+    <h2>Fixar conceitos<br>sem perceber.</h2>
+    <p>
+      CodeMemory é desenvolvido em Python puro com Pygame.
+      O conteúdo das cartas é baseado em tópicos reais de cursos de computação —
+      da sintaxe básica a padrões de arquitetura.
+    </p>
+    <p>
+      O código é aberto, comentado e serve como material de estudo
+      sobre estruturas de dados, lógica de estados e design de jogo.
+    </p>
+  </div>
+
+  <div class="features">
+    <div class="feature-item">
+      <span class="feature-num">01</span>
+      <div class="feature-text">
+        <h4>Conteúdo pedagógico</h4>
+        <p>Pares mapeados ao currículo de cursos de computação e análise de sistemas.</p>
+      </div>
+    </div>
+    <div class="feature-item">
+      <span class="feature-num">02</span>
+      <div class="feature-text">
+        <h4>Níveis progressivos</h4>
+        <p>Do básico de sintaxe até algoritmos, Big O e arquitetura de software.</p>
+      </div>
+    </div>
+    <div class="feature-item">
+      <span class="feature-num">03</span>
+      <div class="feature-text">
+        <h4>Modo cronometrado</h4>
+        <p>Pontuação por tempo para torneios e gamificação em sala de aula.</p>
+      </div>
+    </div>
+    <div class="feature-item">
+      <span class="feature-num">04</span>
+      <div class="feature-text">
+        <h4>Open source · MIT</h4>
+        <p>Código público, extensível e sem restrições de uso acadêmico.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- REQUIREMENTS -->
+<div class="requirements">
+  <p class="section-label">// Requisitos</p>
+  <div class="req-grid">
+    <div class="req-item">
+      <span class="req-key">Linguagem</span>
+      <span class="req-val">Python 3.8+</span>
+    </div>
+    <div class="req-item">
+      <span class="req-key">Dependência</span>
+      <span class="req-val"><code>pygame</code></span>
+    </div>
+    <div class="req-item">
+      <span class="req-key">Plataformas</span>
+      <span class="req-val">Win · macOS · Linux</span>
+    </div>
+    <div class="req-item">
+      <span class="req-key">Licença</span>
+      <span class="req-val">MIT</span>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <p>CodeMemory &copy; 2026 &ensp;·&ensp; Projeto acadêmico</p>
+  <ul class="footer-nav">
+    <li><a href="https://github.com">GitHub</a></li>
+    <li><a href="#">Docs</a></li>
+    <li><a href="#">Contato</a></li>
+  </ul>
+</footer>
+
+<script>
+  // Integração com servidor Flask para iniciar o jogo
+  document.getElementById('download').addEventListener('click', async (e) => {
+    e.preventDefault();
+    
+    const btn = e.target;
+    const originalText = btn.textContent;
+    
+    btn.textContent = '⏳ Iniciando...';
+    btn.style.opacity = '0.6';
+    btn.style.pointerEvents = 'none';
+    
+    try {
+      const response = await fetch('/api/play', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Servidor respondeu com status ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        btn.textContent = '✓ Jogo iniciado!';
+        setTimeout(() => {
+          btn.textContent = originalText;
+          btn.style.opacity = '1';
+          btn.style.pointerEvents = 'auto';
+        }, 2000);
+      } else {
+        alert('❌ Erro: ' + data.message);
+        btn.textContent = originalText;
+        btn.style.opacity = '1';
+        btn.style.pointerEvents = 'auto';
+      }
+    } catch (error) {
+      console.error('Erro:', error);
+      alert('❌ Erro ao conectar com o servidor:\n' + error.message + '\n\nCertifique-se que:\n1. O servidor está rodando (python app.py)\n2. Você está em http://localhost:5000\n3. pygame está instalado (pip install pygame)');
+      btn.textContent = originalText;
+      btn.style.opacity = '1';
+      btn.style.pointerEvents = 'auto';
+    }
+  });
+</script>
+
+</body>
+</html>
