@@ -1,0 +1,11 @@
+streamlit>=1.35.0
+streamlit-shadcn-ui>=0.3.5
+fastapi==0.115.0
+uvicorn==0.30.6
+gspread==6.1.2
+google-auth==2.34.0
+google-auth-oauthlib==1.2.1
+google-auth-httplib2==0.2.0
+pygame==2.6.1
+Pillow>=10.0.0
+httpx==0.27.2
