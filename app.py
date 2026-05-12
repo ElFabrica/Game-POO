@@ -8,12 +8,17 @@
 
 import os
 import sys
-import streamlit as st
 
-# Garante que o root do projeto está no path para importar módulos
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, ROOT)
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# ── Resolve paths para funcionar local e no Streamlit Cloud ──
+THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT_DIR = os.path.dirname(THIS_DIR)
+
+# Adiciona tanto o root quanto o streamlit_app ao path
+for p in [THIS_DIR, ROOT_DIR]:
+    if p not in sys.path:
+        sys.path.insert(0, p)
+
+import streamlit as st
 
 # ── Configuração da página ───────────────────────────────────
 st.set_page_config(
@@ -23,39 +28,20 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# ── Estilos globais (espelha o CSS original) ─────────────────
+# ── Estilos globais ──────────────────────────────────────────
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Exo+2:wght@300;400;600&display=swap');
-
-    :root {
-        --bg:      #0c0c0f;
-        --surface: #131318;
-        --ink:     #e8e8f0;
-        --muted:   #7a7a90;
-        --accent:  #5b8dee;
-        --border:  #252530;
-    }
 
     html, body, [data-testid="stAppViewContainer"] {
         background-color: #0c0c0f !important;
         color: #e8e8f0 !important;
     }
-
     [data-testid="stSidebar"] { background-color: #131318 !important; }
-
-    /* Remove padding padrão do streamlit */
-    .block-container {
-        max-width: 960px !important;
-        padding: 2rem 2rem !important;
-    }
-
+    .block-container { max-width: 960px !important; padding: 2rem 2rem !important; }
     h1, h2, h3, h4 { color: #e8e8f0 !important; font-family: 'Rajdhani', sans-serif !important; }
-
-    /* Separadores */
     hr { border-color: #252530 !important; margin: 48px 0 !important; }
 
-    /* Métricas */
     [data-testid="metric-container"] {
         background: #131318;
         border: 1px solid #252530;
@@ -65,8 +51,7 @@ st.markdown("""
     [data-testid="stMetricValue"] { color: #5b8dee !important; }
     [data-testid="stMetricLabel"] { color: #7a7a90 !important; }
 
-    /* Botão primário shadcn */
-    button[kind="primary"], .stButton > button {
+    .stButton > button {
         background: #5b8dee !important;
         border: none !important;
         font-family: 'Rajdhani', sans-serif !important;
@@ -75,7 +60,6 @@ st.markdown("""
         text-transform: uppercase !important;
     }
 
-    /* Nav customizada */
     .nav-bar {
         display: flex;
         align-items: center;
@@ -93,18 +77,7 @@ st.markdown("""
         color: #e8e8f0;
     }
     .nav-logo span { color: #5b8dee; }
-    .nav-links { display: flex; gap: 32px; list-style: none; }
-    .nav-links a {
-        font-family: 'Rajdhani', sans-serif;
-        font-size: 0.82rem;
-        font-weight: 500;
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
-        color: #7a7a90;
-        text-decoration: none;
-    }
 
-    /* Footer */
     .footer-bar {
         border-top: 1px solid #252530;
         margin-top: 60px;
@@ -124,26 +97,33 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ── Imports dos componentes ──────────────────────────────────
-from components.hero               import render as render_hero
-from components.value_prop         import render as render_value_prop
-from components.cards_preview      import render as render_cards
-from components.about              import render as render_about
+from components.hero                 import render as render_hero
+from components.value_prop           import render as render_value_prop
+from components.cards_preview        import render as render_cards
+from components.about                import render as render_about
 from components.requirements_section import render as render_requirements
 
 # ── NAV ─────────────────────────────────────────────────────
 st.markdown("""
     <div class="nav-bar">
         <span class="nav-logo">Code<span>Memory</span></span>
-        <div class="nav-links">
-            <a href="#valor">Proposta</a>
-            <a href="#sobre">Sobre</a>
-            <a href="https://github.com" target="_blank">GitHub</a>
+        <div style="display:flex;gap:32px">
+            <a href="#" style="font-family:'Rajdhani',sans-serif;font-size:0.82rem;
+                               letter-spacing:0.1em;text-transform:uppercase;
+                               color:#7a7a90;text-decoration:none">Proposta</a>
+            <a href="#" style="font-family:'Rajdhani',sans-serif;font-size:0.82rem;
+                               letter-spacing:0.1em;text-transform:uppercase;
+                               color:#7a7a90;text-decoration:none">Sobre</a>
+            <a href="https://github.com" target="_blank"
+               style="font-family:'Rajdhani',sans-serif;font-size:0.82rem;
+                      letter-spacing:0.1em;text-transform:uppercase;
+                      color:#7a7a90;text-decoration:none">GitHub</a>
         </div>
     </div>
 """, unsafe_allow_html=True)
 
 # ── HERO ─────────────────────────────────────────────────────
-render_hero(game_root=ROOT)
+render_hero(game_root=ROOT_DIR)
 
 st.markdown("<hr>", unsafe_allow_html=True)
 
@@ -171,8 +151,6 @@ st.markdown("""
         <span class="footer-text">CodeMemory &copy; 2026 &ensp;·&ensp; Projeto acadêmico</span>
         <span class="footer-text">
             <a href="https://github.com" style="color:#3a3a48;text-decoration:none">GitHub</a>
-            &ensp;·&ensp;
-            <a href="/ranking" style="color:#3a3a48;text-decoration:none">Ranking</a>
         </span>
     </div>
 """, unsafe_allow_html=True)
