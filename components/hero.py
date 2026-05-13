@@ -32,4 +32,5 @@ def render(game_root: str = ""):
         ui.link_button(text="Ver no GitHub", url="https://github.com/ElFabrica/Game-POO", key="btn_gh", variant="outline")
 
     if play:
-        st.switch_page("pages/jogo.py")
+        st.session_state["_goto"] = "pages/jogo.py"
+        st.rerun()
