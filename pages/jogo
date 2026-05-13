@@ -1,0 +1,414 @@
+"""
+=============================================================
+  PAGE: pages/jogo.py
+  Jogo da memória — versão Streamlit (sem Pygame)
+=============================================================
+"""
+import time
+import random
+import streamlit as st
+
+st.set_page_config(
+    page_title="CodeMemory — Jogar",
+    page_icon="🧠",
+    layout="wide",
+    initial_sidebar_state="collapsed",
+)
+
+# ── Estilos globais ──────────────────────────────────────────
+st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Exo+2:wght@300;400;600&display=swap');
+
+html, body, [data-testid="stAppViewContainer"] {
+    background-color: #0c0c0f !important;
+    color: #e8e8f0 !important;
+}
+[data-testid="stSidebar"] { display: none !important; }
+.block-container { max-width: 1100px !important; padding: 1.5rem 2rem !important; }
+h1, h2, h3, h4 { color: #e8e8f0 !important; font-family: 'Rajdhani', sans-serif !important; }
+
+/* Cards do tabuleiro */
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 10px;
+    margin: 0 auto;
+    max-width: 900px;
+}
+.card-btn {
+    aspect-ratio: 3/4;
+    border-radius: 10px;
+    border: 1px solid #252530;
+    background: #131318;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    color: #e8e8f0;
+    text-transform: uppercase;
+    transition: border-color 0.15s, transform 0.1s;
+    padding: 6px;
+    text-align: center;
+    line-height: 1.2;
+    user-select: none;
+}
+.card-btn:hover { border-color: #5b8dee; transform: translateY(-2px); }
+.card-btn.face-up { background: #1a1a2e; border-color: #5b8dee; color: #5b8dee; }
+.card-btn.matched { background: #0d2218; border-color: #22c55e; color: #22c55e; pointer-events: none; }
+.card-btn.back { background: #131318; color: #3a3a48; }
+
+/* HUD */
+.hud {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 20px;
+    background: #131318;
+    border: 1px solid #252530;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    font-family: 'Rajdhani', sans-serif;
+}
+.hud-item { text-align: center; }
+.hud-label { font-size: 0.65rem; letter-spacing: 0.15em; text-transform: uppercase; color: #7a7a90; }
+.hud-value { font-size: 1.3rem; font-weight: 700; color: #e8e8f0; }
+.hud-value.blue  { color: #5b8dee; }
+.hud-value.green { color: #22c55e; }
+.hud-value.red   { color: #ef4444; }
+
+/* Tela de resultado */
+.result-panel {
+    max-width: 540px;
+    margin: 40px auto;
+    background: #131318;
+    border: 1px solid #252530;
+    border-radius: 14px;
+    padding: 40px 48px;
+    text-align: center;
+    font-family: 'Rajdhani', sans-serif;
+}
+.result-score {
+    font-size: 4rem;
+    font-weight: 800;
+    color: #5b8dee;
+    line-height: 1;
+    margin: 12px 0 4px;
+}
+.result-label { font-size: 0.8rem; letter-spacing: 0.15em; text-transform: uppercase; color: #7a7a90; }
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 24px 0 32px;
+    text-align: left;
+}
+.stat-item .s-label { font-size: 0.7rem; color: #7a7a90; letter-spacing: 0.1em; text-transform: uppercase; }
+.stat-item .s-value { font-size: 1.1rem; font-weight: 700; color: #e8e8f0; }
+
+/* Tela de nome */
+.name-panel {
+    max-width: 420px;
+    margin: 80px auto 0;
+    background: #131318;
+    border: 1px solid #252530;
+    border-radius: 14px;
+    padding: 40px 48px;
+    text-align: center;
+    font-family: 'Rajdhani', sans-serif;
+}
+
+/* Botão primário */
+.stButton > button {
+    background: #5b8dee !important;
+    border: none !important;
+    font-family: 'Rajdhani', sans-serif !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.1em !important;
+    text-transform: uppercase !important;
+    border-radius: 8px !important;
+}
+.stButton > button:hover { background: #4a7adb !important; }
+
+/* Botão outline */
+button[kind="secondary"] {
+    background: transparent !important;
+    border: 1px solid #252530 !important;
+    color: #7a7a90 !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# ── Configurações ────────────────────────────────────────────
+LANGUAGES = [
+    "Python", "JavaScript", "TypeScript", "Rust", "Go", "Java",
+    "C++", "Swift", "Kotlin", "Ruby", "PHP", "Dart"
+]
+NUM_PAIRS   = 12
+FLIP_DELAY  = 0.8   # segundos para virar cartas erradas
+
+# ── Inicialização do session_state ───────────────────────────
+def _init_state():
+    if "game_state" not in st.session_state:
+        st.session_state.game_state = "name_input"   # name_input | playing | result
+    if "player_name" not in st.session_state:
+        st.session_state.player_name = ""
+    if "cards" not in st.session_state:
+        st.session_state.cards = []
+    if "face_up" not in st.session_state:
+        st.session_state.face_up = []       # índices das cartas abertas
+    if "matched" not in st.session_state:
+        st.session_state.matched = set()    # índices das cartas combinadas
+    if "attempts" not in st.session_state:
+        st.session_state.attempts = 0
+    if "pairs_found" not in st.session_state:
+        st.session_state.pairs_found = 0
+    if "start_time" not in st.session_state:
+        st.session_state.start_time = None
+    if "elapsed" not in st.session_state:
+        st.session_state.elapsed = 0.0
+    if "flip_pending" not in st.session_state:
+        st.session_state.flip_pending = False
+    if "flip_time" not in st.session_state:
+        st.session_state.flip_time = None
+    if "name_error" not in st.session_state:
+        st.session_state.name_error = ""
+
+def _setup_board():
+    chosen = random.sample(LANGUAGES, NUM_PAIRS)
+    cards  = chosen * 2
+    random.shuffle(cards)
+    st.session_state.cards       = cards
+    st.session_state.face_up     = []
+    st.session_state.matched     = set()
+    st.session_state.attempts    = 0
+    st.session_state.pairs_found = 0
+    st.session_state.start_time  = time.time()
+    st.session_state.elapsed     = 0.0
+    st.session_state.flip_pending = False
+    st.session_state.flip_time   = None
+
+def _elapsed_str(seconds: float) -> str:
+    s = int(seconds)
+    return f"{s // 60:02d}:{s % 60:02d}"
+
+def _compute_score(pairs: int, attempts: int, elapsed: float) -> int:
+    errors = max(0, attempts - pairs)
+    score  = pairs * 1000 - errors * 100 - int(elapsed * 2)
+    return max(0, score)
+
+# ── Handlers ─────────────────────────────────────────────────
+def _handle_card_click(idx: int):
+    s = st.session_state
+
+    # Ignora se há flip pendente, carta já combinada ou já virada
+    if s.flip_pending:
+        return
+    if idx in s.matched:
+        return
+    if idx in s.face_up:
+        return
+    if len(s.face_up) >= 2:
+        return
+
+    s.face_up.append(idx)
+
+    if len(s.face_up) == 2:
+        s.attempts += 1
+        a, b = s.face_up
+        if s.cards[a] == s.cards[b]:
+            # Par correto
+            s.matched.add(a)
+            s.matched.add(b)
+            s.pairs_found += 1
+            s.face_up = []
+            # Verifica fim de jogo
+            if s.pairs_found == NUM_PAIRS:
+                s.elapsed    = time.time() - s.start_time
+                s.game_state = "result"
+        else:
+            # Par errado — agenda virada
+            s.flip_pending = True
+            s.flip_time    = time.time()
+
+# ── Telas ────────────────────────────────────────────────────
+def _render_name_input():
+    st.markdown("""
+    <div class="name-panel">
+        <p style="color:#5b8dee;font-size:0.72rem;font-weight:600;
+                  letter-spacing:0.18em;text-transform:uppercase;
+                  font-family:monospace;margin-bottom:8px">// Identificação</p>
+        <h2 style="font-size:1.8rem;font-weight:800;margin-bottom:6px">Como você se chama?</h2>
+        <p style="color:#7a7a90;font-size:0.85rem;margin-bottom:0">
+            Seu nome aparecerá no ranking global.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Centraliza o input
+    _, col, _ = st.columns([1, 2, 1])
+    with col:
+        name = st.text_input(
+            "Nome do jogador",
+            value=st.session_state.player_name,
+            max_chars=20,
+            placeholder="Seu nome...",
+            label_visibility="collapsed",
+            key="name_input_field",
+        )
+        if st.session_state.name_error:
+            st.markdown(f"<p style='color:#ef4444;font-size:0.8rem;text-align:center'>{st.session_state.name_error}</p>", unsafe_allow_html=True)
+
+        c1, c2 = st.columns(2)
+        with c1:
+            if st.button("← Voltar", use_container_width=True, type="secondary"):
+                st.switch_page("app.py")
+        with c2:
+            if st.button("Começar →", use_container_width=True, type="primary"):
+                if name.strip():
+                    st.session_state.player_name = name.strip()
+                    st.session_state.name_error  = ""
+                    _setup_board()
+                    st.session_state.game_state  = "playing"
+                    st.rerun()
+                else:
+                    st.session_state.name_error = "Digite seu nome para continuar!"
+                    st.rerun()
+
+
+def _render_game():
+    s = st.session_state
+
+    # Resolve flip pendente
+    if s.flip_pending and s.flip_time:
+        if time.time() - s.flip_time >= FLIP_DELAY:
+            s.face_up      = []
+            s.flip_pending = False
+            s.flip_time    = None
+
+    # Tempo decorrido
+    elapsed = time.time() - s.start_time if s.start_time else 0
+    elapsed_s = _elapsed_str(elapsed)
+    accuracy  = round(s.pairs_found / s.attempts * 100, 1) if s.attempts else 0
+
+    # HUD
+    st.markdown(f"""
+    <div class="hud">
+        <div class="hud-item">
+            <div class="hud-label">Jogador</div>
+            <div class="hud-value">{s.player_name}</div>
+        </div>
+        <div class="hud-item">
+            <div class="hud-label">Pares</div>
+            <div class="hud-value green">{s.pairs_found} / {NUM_PAIRS}</div>
+        </div>
+        <div class="hud-item">
+            <div class="hud-label">Tentativas</div>
+            <div class="hud-value blue">{s.attempts}</div>
+        </div>
+        <div class="hud-item">
+            <div class="hud-label">Precisão</div>
+            <div class="hud-value">{accuracy}%</div>
+        </div>
+        <div class="hud-item">
+            <div class="hud-label">Tempo</div>
+            <div class="hud-value">{elapsed_s}</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Botão sair
+    _, col_quit = st.columns([6, 1])
+    with col_quit:
+        if st.button("✕ Sair", type="secondary"):
+            st.session_state.game_state = "name_input"
+            st.rerun()
+
+    # Tabuleiro — 6 colunas × 4 linhas
+    cols = st.columns(6, gap="small")
+    for idx, lang in enumerate(s.cards):
+        col = cols[idx % 6]
+        with col:
+            if idx in s.matched:
+                st.button(lang, key=f"card_{idx}", disabled=True,
+                          help=f"✅ {lang}", use_container_width=True)
+            elif idx in s.face_up:
+                st.button(f"[ {lang} ]", key=f"card_{idx}",
+                          use_container_width=True,
+                          on_click=_handle_card_click, args=(idx,))
+            else:
+                st.button("?", key=f"card_{idx}",
+                          use_container_width=True,
+                          on_click=_handle_card_click, args=(idx,))
+
+    # Auto-rerun enquanto há flip pendente
+    if s.flip_pending:
+        time.sleep(0.1)
+        st.rerun()
+
+
+def _render_result():
+    s        = st.session_state
+    score    = _compute_score(s.pairs_found, s.attempts, s.elapsed)
+    errors   = max(0, s.attempts - s.pairs_found)
+    accuracy = round(s.pairs_found / s.attempts * 100, 1) if s.attempts else 0
+    elapsed  = _elapsed_str(s.elapsed)
+
+    st.markdown(f"""
+    <div class="result-panel">
+        <p style="color:#5b8dee;font-size:0.72rem;font-weight:600;
+                  letter-spacing:0.18em;text-transform:uppercase;
+                  font-family:monospace;margin-bottom:4px">// Fim de jogo</p>
+        <h2 style="font-size:1.6rem;font-weight:800;margin-bottom:0">{s.player_name}</h2>
+        <div class="result-score">{score}</div>
+        <div class="result-label">pontos</div>
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="s-label">Pares encontrados</div>
+                <div class="s-value">{s.pairs_found} / {NUM_PAIRS}</div>
+            </div>
+            <div class="stat-item">
+                <div class="s-label">Tentativas</div>
+                <div class="s-value">{s.attempts}</div>
+            </div>
+            <div class="stat-item">
+                <div class="s-label">Erros</div>
+                <div class="s-value">{errors}</div>
+            </div>
+            <div class="stat-item">
+                <div class="s-label">Precisão</div>
+                <div class="s-value">{accuracy}%</div>
+            </div>
+            <div class="stat-item">
+                <div class="s-label">Tempo</div>
+                <div class="s-value">{elapsed}</div>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    _, col1, col2, _ = st.columns([1, 2, 2, 1])
+    with col1:
+        if st.button("▶ Jogar Novamente", use_container_width=True, type="primary"):
+            _setup_board()
+            st.session_state.game_state = "playing"
+            st.rerun()
+    with col2:
+        if st.button("← Voltar ao início", use_container_width=True, type="secondary"):
+            st.switch_page("app.py")
+
+
+# ── Roteador ─────────────────────────────────────────────────
+_init_state()
+
+state = st.session_state.game_state
+if state == "name_input":
+    _render_name_input()
+elif state == "playing":
+    _render_game()
+elif state == "result":
+    _render_result()
