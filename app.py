@@ -1173,6 +1173,14 @@ function playSound(name){
   if(name==="victory"){[523,659,784].forEach((f,i)=>setTimeout(()=>playTone(f,0.18),i*120));}
 }
 
+// ── Utilitários ────────────────────────────────
+function shuffleArray(arr){
+  for(let i=arr.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]]=[arr[j],arr[i]];
+  }
+}
+
 // ── Particles ──────────────────────────────────
 (function spawnParticles(){
   const c=document.getElementById("particles");
